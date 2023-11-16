@@ -19,6 +19,6 @@ collect cash at any time. The check only needs to confirm the validity of both p
 * Transaction combination and withdrawl funds
 * Close payment channel
 
-[payment workflow]()
 
 ## How it works
+comming soon
