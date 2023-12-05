@@ -3,12 +3,12 @@
 ## Circuit Info
 
 ```sh
-non-linear constraints: 1509304
+non-linear constraints: 4447
 linear constraints: 0
-public inputs: 5
+public inputs: 2
 public outputs: 0
-private inputs: 16
+private inputs: 5
 private outputs: 0
-wires: 1500736
-labels: 2131781
+wires: 4450
+labels: 22019
 ```
