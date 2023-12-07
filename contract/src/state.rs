@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cosmwasm_std::{Addr, CanonicalAddr};
 use cosmwasm_tools::config_item;
 use cw_storage_plus::{Item, Map};
@@ -24,13 +26,12 @@ pub struct Config {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PaymentChannel {
-    pub recipients: Vec<Recipient>,
+    pub recipients: HashMap<String, Recipient>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Recipient {
-    pub recipient_pubkey_hash: String,
     pub max_amount: u128,
     pub nonce_withdrawl: Option<u64>,
     pub face_value: Option<u128>,
@@ -38,30 +39,17 @@ pub struct Recipient {
 }
 
 impl Recipient {
+    #[inline]
+    pub fn new(max_amount: u128, face_value: u128) -> Self {
+        Self {
+            max_amount,
+            nonce_withdrawl: None,
+            face_value: Some(face_value),
+            auto_release: None,
+        }
+    }
+
     pub fn remain(&self) -> u128 {
         self.max_amount - self.nonce_withdrawl.unwrap_or(0) as u128 * self.face_value.unwrap_or(0)
-    }
-}
-
-impl PaymentChannel {
-    pub fn add(&mut self, recipient_pubkey_hash: String, amount: u128, face_value: Option<u128>) {
-        // add code here
-        if let Some(recipient) = self
-            .recipients
-            .iter_mut()
-            .find(|x| x.recipient_pubkey_hash == recipient_pubkey_hash)
-            .as_mut()
-        {
-            recipient.max_amount = recipient.max_amount + amount;
-            return;
-        }
-
-        self.recipients.push(Recipient {
-            recipient_pubkey_hash,
-            max_amount: amount,
-            nonce_withdrawl: None,
-            auto_release: None,
-            face_value,
-        });
     }
 }

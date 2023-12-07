@@ -1,34 +1,79 @@
 use cosmwasm_std::{
-    from_json, to_binary, BankMsg, CanonicalAddr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, Uint128, WasmMsg,
+    from_json, to_json_binary, BankMsg, CanonicalAddr, Coin, CosmosMsg, Deps, DepsMut, Env,
+    MessageInfo, Response, SubMsg, Uint128, WasmMsg,
 };
 
 use crate::{
     error::ContractError,
-    msg::{self, *},
-    state::{Config, Denom, PaymentChannel, CONFIG, PAYMENT_CHANNELS},
+    msg::*,
+    state::{Config, Denom, PaymentChannel, Recipient, CONFIG, PAYMENT_CHANNELS},
 };
 use cw20::Cw20ReceiveMsg;
+use std::collections::HashMap;
 
 use cosmwasm_tools::access_ctrl as constraints;
 
-pub fn add_payment(
+pub fn handle_cw20_msg(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    sender_pubkey_hash: Vec<u8>,
-    recipients: Vec<(String, u128)>,
+    msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
-    // TODO:
-    let cfg = CONFIG.load(deps.storage)?;
+    let raw: ExecuteMsg = from_json(&msg.msg)?;
+    match raw {
+        ExecuteMsg::AddPaymentChan {
+            sender_pubkey_hash,
+            recipients,
+        } => return build_payment_chan(deps, env, info, msg, sender_pubkey_hash, recipients),
+        _ => unreachable!(),
+    }
+}
 
-    Ok(Response::new())
+pub fn build_payment_chan(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    msg: Cw20ReceiveMsg,
+    sender_pubkey_hash: String,
+    recipients: Vec<(String, u128, u128)>, // recipient_pubkey_hash, face_value, total
+) -> Result<Response, ContractError> {
+    let mut total_amt = 0;
+    for (_, _, amt) in recipients.iter() {
+        total_amt += *amt
+    }
+    if msg.amount.lt(&Uint128::from(total_amt)) {
+        return Err(ContractError::InsufficientFund);
+    }
+
+    let mut payment_chan = PAYMENT_CHANNELS
+        .may_load(deps.storage, sender_pubkey_hash.clone())?
+        .unwrap_or(PaymentChannel {
+            recipients: HashMap::new(),
+        });
+
+    for (recipient_pubkey_hash, face_value, total) in recipients {
+        let recipient = payment_chan
+            .recipients
+            .get_mut(recipient_pubkey_hash.as_str());
+        if let Some(r) = recipient {
+            r.max_amount += total;
+        } else {
+            payment_chan.recipients.insert(
+                recipient_pubkey_hash.clone(),
+                Recipient::new(total, face_value),
+            );
+        }
+    }
+
+    PAYMENT_CHANNELS.save(deps.storage, sender_pubkey_hash, &payment_chan)?;
+
+    Ok(Response::new().add_attribute("method", "add_payment"))
 }
 
 pub fn close_payment(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     sender_pubkey_hash: String,
     sender_commitment: Vec<u8>,
     recipients: Vec<(String, Vec<u8>)>, // recipient_pubkey_hash, recipient_commitment
@@ -42,52 +87,54 @@ pub fn close_payment(
     let cfg = CONFIG.load(deps.storage)?;
 
     let mut payment_chan = PAYMENT_CHANNELS.load(deps.storage, sender_pubkey_hash.clone())?;
-
+    let mut refund_amt = 0;
     for (addr, commitment) in recipients {
-        let mut channel = payment_chan
-            .recipients
-            .iter_mut()
-            .find(|x| x.recipient_pubkey_hash == addr);
-        let mut refund_amt = 0;
-        if let Some(chan) = channel {
+        let recipient = payment_chan.recipients.get_mut(addr.as_str());
+        if recipient.is_none() {
+            continue;
+        }
+
+        if let Some(r) = recipient {
             if verify_commitment(&addr, CommitmentType::CloseChannel, commitment).is_ok() {
                 // settlement
+                refund_amt += r.remain();
+                payment_chan.recipients.remove(addr.as_str());
             } else {
                 // auto release
-                if let Some(auto_release) = chan.auto_release {
+                if let Some(auto_release) = r.auto_release {
                     if auto_release <= env.block.time.seconds() {
-                        refund_amt += chan.remain()
+                        refund_amt += r.remain()
                     }
-                    // TODO: remove channel
+
+                    payment_chan.recipients.remove(addr.as_str());
                 } else {
-                    chan.auto_release = Some(env.block.time.seconds() + cfg.auto_release_time);
+                    r.auto_release = Some(env.block.time.seconds() + cfg.auto_release_time);
                 }
             }
         }
     }
 
+    // make refund
+    let sub_msg = build_transfer_msg(&cfg, info.sender.to_string(), refund_amt)?;
+
     PAYMENT_CHANNELS.save(deps.storage, sender_pubkey_hash, &payment_chan)?;
 
-    Ok(Response::new())
+    Ok(Response::new().add_submessages(sub_msg))
 }
 
 use cw20::Cw20ExecuteMsg;
 
-fn build_transfer_msg(
-    cfg: &Config,
-    resp: &mut Response,
-    to: String,
-    amt: u128,
-) -> Result<(), ContractError> {
+fn build_transfer_msg(cfg: &Config, to: String, amt: u128) -> Result<Vec<SubMsg>, ContractError> {
+    let mut res = vec![];
     match cfg.denom.clone() {
         Denom::Native(denom) => {
-            resp.clone().add_message(BankMsg::Send {
+            res.push(SubMsg::new(BankMsg::Send {
                 to_address: to,
                 amount: vec![Coin {
                     denom,
                     amount: Uint128::new(amt),
                 }],
-            });
+            }));
         }
         Denom::Cw20(addr) => {
             let refund_msg = Cw20ExecuteMsg::Transfer {
@@ -97,44 +144,50 @@ fn build_transfer_msg(
 
             let msg: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: addr.to_string(),
-                msg: to_binary(&refund_msg)?,
+                msg: to_json_binary(&refund_msg)?,
                 funds: vec![],
             });
-            resp.clone().add_message(msg);
+            res.push(SubMsg::new(msg));
         }
     }
 
-    Ok(())
+    Ok(res)
 }
 
-pub fn payment_claim(
+pub fn cashing(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     recipient_pubkey_hash: String,
     cheques: Vec<(PaymentCheque, PaymentCheque)>,
 ) -> Result<Response, ContractError> {
-    // TODO:
-    let cfg = CONFIG.load(deps.storage)?;
     payment_check_interval_verify(deps.as_ref(), &cheques)?;
 
-    let mut total_value = 0;
+    let cfg = CONFIG.load(deps.storage)?;
+    let mut total_cash = 0;
     for (start, end) in cheques {
-        let mut payment_channel = PAYMENT_CHANNELS.load(deps.storage, end.sender_pubkey_hash)?;
-        let channel = payment_channel
-            .recipients
-            .iter_mut()
-            .find(|x| x.recipient_pubkey_hash == recipient_pubkey_hash);
-        if let Some(chan) = channel {
-            chan.nonce_withdrawl = Some(end.nonce);
-            total_value += (end.nonce - start.nonce) as u128 * chan.face_value.unwrap();
+        assert!(end.nonce >= start.nonce);
+        assert_eq!(end.sender_pubkey_hash, start.sender_pubkey_hash);
 
-            PAYMENT_CHANNELS.save(deps.storage, start.sender_pubkey_hash, &payment_channel)?;
-        }
+        let mut payment_chan =
+            PAYMENT_CHANNELS.load(deps.storage, start.sender_pubkey_hash.clone())?;
+        let recipient = payment_chan
+            .recipients
+            .get_mut(recipient_pubkey_hash.as_str())
+            .unwrap();
+
+        assert_eq!(recipient.nonce_withdrawl.unwrap_or(0) + 1, start.nonce);
+
+        total_cash += (end.nonce - start.nonce + 1) as u128 * recipient.face_value.unwrap();
+        recipient.nonce_withdrawl = Some(end.nonce);
+        PAYMENT_CHANNELS.save(deps.storage, start.sender_pubkey_hash, &payment_chan)?;
     }
-    // TODO: make transfer
-    //
-    Ok(Response::new())
+
+    let sub_msgs = build_transfer_msg(&cfg, info.sender.to_string(), total_cash)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "cashing")
+        .add_submessages(sub_msgs))
 }
 
 pub enum CommitmentType {
@@ -186,57 +239,7 @@ pub fn update_config(
     }
 
     CONFIG.save(deps.storage, &config)?;
-    Ok(Response::new())
-}
-
-pub fn receive_cw20(
-    deps: DepsMut,
-    _: Env,
-    info: MessageInfo,
-    msg: Cw20ReceiveMsg,
-) -> Result<Response, ContractError> {
-    let cfg = CONFIG.load(deps.storage)?;
-    match cfg.denom {
-        Denom::Cw20(addr) => {
-            assert_eq!(addr.to_string(), info.sender.to_string());
-
-            let execute_msg: ExecuteMsg = from_json(msg.msg)?;
-            match execute_msg {
-                ExecuteMsg::AddPaymentChan {
-                    sender_pubkey_hash,
-                    recipients,
-                    face_value,
-                } => {
-                    let mut total_fund: u128 = 0;
-
-                    let _ = recipients.iter().map(|(_, amount)| total_fund += amount);
-                    if msg.amount.u128() < total_fund {
-                        return Err(ContractError::InsufficientFund);
-                    }
-
-                    let mut payment_chan =
-                        PAYMENT_CHANNELS.load(deps.storage, sender_pubkey_hash.clone())?;
-
-                    for (recipient, amt) in recipients {
-                        payment_chan.add(recipient, amt, face_value);
-                        if payment_chan.recipients.len() > cfg.max_recipient as usize {
-                            return Err(ContractError::ExceedRecipientNum);
-                        }
-                    }
-
-                    PAYMENT_CHANNELS.save(
-                        deps.storage,
-                        sender_pubkey_hash.clone(),
-                        &payment_chan,
-                    )?;
-                }
-                _ => return Err(ContractError::UnsupportMsg),
-            }
-        }
-        Denom::Native(_) => return Err(ContractError::UnsupportDenom()),
-    }
-
-    Ok(Response::new().add_attribute("method", "receive_cw20"))
+    Ok(Response::new().add_attribute("method", "update_config"))
 }
 
 fn owner_only(
