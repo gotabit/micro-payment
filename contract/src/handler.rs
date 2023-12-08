@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     from_json, to_json_binary, BankMsg, CanonicalAddr, Coin, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, SubMsg, Uint128, WasmMsg,
+    MessageInfo, Response, StdResult, SubMsg, Uint128, WasmMsg,
 };
 
 use crate::{
@@ -239,6 +239,7 @@ pub fn update_config(
     }
 
     CONFIG.save(deps.storage, &config)?;
+
     Ok(Response::new().add_attribute("method", "update_config"))
 }
 
@@ -258,4 +259,44 @@ fn owner_only(
     }
 
     Ok(true)
+}
+
+const DEFAULT_SIZE: u32 = 10;
+
+pub fn payment_chan(
+    deps: Deps,
+    _env: Env,
+    sender_pubkey_hash: String,
+    recipient_pubkey_hash: Option<String>,
+    page: Option<u32>,
+    size: Option<u32>,
+) -> StdResult<Option<Vec<Recipient>>> {
+    let chan = PAYMENT_CHANNELS.load(deps.storage, sender_pubkey_hash)?;
+    let mut res = vec![];
+    if let Some(recipient_pubkey_hash) = recipient_pubkey_hash {
+        let recipient_chan = chan.recipients.get(&recipient_pubkey_hash);
+        if let Some(rc) = recipient_chan {
+            res.push(rc.clone());
+        }
+    } else {
+        let size = size.unwrap_or(DEFAULT_SIZE);
+        let start = page.unwrap_or(0) * size;
+
+        for (i, v) in chan.recipients.iter().enumerate() {
+            if i >= start as usize {
+                res.push(v.1.clone());
+            }
+
+            if i > (start + size) as usize {
+                break;
+            }
+        }
+    }
+
+    Ok(Some(res))
+}
+
+pub fn config(deps: Deps) -> StdResult<Config> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(config)
 }
