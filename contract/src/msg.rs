@@ -1,4 +1,5 @@
 use crate::state::Denom;
+use crate::state::{Config, Recipient};
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
@@ -49,15 +50,17 @@ pub struct PaymentCheque {
     pub nonce: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
+    #[returns(Option<Vec<Recipient>>)]
     PaymentChan {
         sender_pubkey_hash: String,
         recipient_pubkey_hash: Option<String>,
         page: Option<u32>,
         size: Option<u32>,
     },
+    #[returns(Config)]
     Config {},
 }
 

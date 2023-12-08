@@ -2,6 +2,7 @@ use crate::error::ContractError;
 use crate::handler::*;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{Config, CONFIG};
+use cosmwasm_std::to_json_binary;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
     entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
@@ -70,13 +71,20 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        // QueryMsg::Config {} => to_binary(&query::config(deps)?),
-        // QueryMsg::Auction { id } => to_binary(&query::auction(deps, id)?),
-        // QueryMsg::AuctionList {
-        //     status,
-        //     page,
-        //     limit,
-        // } => to_binary(&query::auction_list(deps, env, status, page, limit)?),
+        QueryMsg::PaymentChan {
+            sender_pubkey_hash,
+            recipient_pubkey_hash,
+            page,
+            size,
+        } => to_json_binary(&payment_chan(
+            deps,
+            env,
+            sender_pubkey_hash,
+            recipient_pubkey_hash,
+            page,
+            size,
+        )?),
+        QueryMsg::Config {} => to_json_binary(&config(deps)?),
         _ => Ok(Binary(vec![])),
     }
 }
