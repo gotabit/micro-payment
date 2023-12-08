@@ -1,43 +1,38 @@
 pragma circom 2.0.0;
 
 include "../circomlib/circuits/poseidon.circom";
-include "../circom-ecdsa/circuits/ecdsa.circom";
+include "../circomlib/circuits/eddsaposeidon.circom";
 
-template PaymentVerify(n, k) {
-    // private input
-    signal input sender_pubkey[2][k];
-    // signature (r, s)
-    signal input r[k];
-    signal input s[k];
-    /// public input
-    signal input msghash[k];
+template EdDSASignVerify() {
+    // pubkey field
+    signal input Ax;
+    signal input Ay;
+    // signature field
+    signal input S;
+    signal input R8x;
+    signal input R8y;
+    // sign msg
+    signal input msg;
+
     signal input sender_pubkey_hash;
-    // public input
 
     /// constraint: sender_pubkey_hash === Poseidon(sender_pubkey)
-    component poseidon_hash = Poseidon(2 * k);
+    component poseidon_hash = Poseidon(2);
 
-    for (var i = 0; i < k; i++) {
-      poseidon_hash.inputs[i] <== sender_pubkey[0][i];
-      poseidon_hash.inputs[k + i] <== sender_pubkey[1][i];
-    }
-
-    // log("poseidon_hash: ", poseidon_hash.out);
+    poseidon_hash.inputs[0] <== Ax;
+    poseidon_hash.inputs[1] <== Ay;
     poseidon_hash.out === sender_pubkey_hash;
 
-    // constraint: verify_sign((r, s), msghash, sender_pubkey) === true
-    component sign_verify = ECDSAVerifyNoPubkeyCheck(n, k);
+    // verify eddsa signature
+    component eddsa_verify = EdDSAPoseidonVerifier();
 
-    for (var i = 0; i < k; i++) {
-      sign_verify.r[i] <== r[i];
-      sign_verify.s[i] <== s[i];
-      sign_verify.msghash[i] <== msghash[i];
-      sign_verify.pubkey[0][i] <== sender_pubkey[0][i];
-      sign_verify.pubkey[1][i] <== sender_pubkey[1][i];
-    }
-
-    sign_verify.result === 1;
+    eddsa_verify.enabled <== 1;
+    eddsa_verify.Ax <== Ax;
+    eddsa_verify.Ay <== Ay;
+    eddsa_verify.S <== S;
+    eddsa_verify.R8x <== R8x;
+    eddsa_verify.R8y <== R8y;
+    eddsa_verify.M <== msg;
 }
 
-
-// component main {public [msghash, sender_pubkey_hash]} = PaymentVerify(64, 4);
+component main {public [msg, sender_pubkey_hash]} = EdDSASignVerify();
