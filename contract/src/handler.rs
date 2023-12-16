@@ -23,8 +23,8 @@ pub fn handle_cw20_msg(
     match raw {
         ExecuteMsg::AddPaymentChan {
             sender_pubkey_hash,
-            recipients,
-        } => return build_payment_chan(deps, env, info, msg, sender_pubkey_hash, recipients),
+            channels,
+        } => build_payment_chan(deps, env, info, msg, sender_pubkey_hash, channels),
         _ => unreachable!(),
     }
 }
@@ -35,11 +35,11 @@ pub fn build_payment_chan(
     _info: MessageInfo,
     msg: Cw20ReceiveMsg,
     sender_pubkey_hash: String,
-    recipients: Vec<(String, u128, u128)>, // recipient_pubkey_hash, face_value, total
+    channels: Vec<Channel>, // recipient_pubkey_hash, face_value, total
 ) -> Result<Response, ContractError> {
     let mut total_amt = 0;
-    for (_, _, amt) in recipients.iter() {
-        total_amt += *amt
+    for chan in channels.iter() {
+        total_amt += chan.max_amount;
     }
     if msg.amount.lt(&Uint128::from(total_amt)) {
         return Err(ContractError::InsufficientFund);
@@ -51,16 +51,18 @@ pub fn build_payment_chan(
             recipients: HashMap::new(),
         });
 
-    for (recipient_pubkey_hash, face_value, total) in recipients {
-        let recipient = payment_chan
-            .recipients
-            .get_mut(recipient_pubkey_hash.as_str());
+    for chan in channels {
+        let recipient = payment_chan.recipients.get_mut(chan.key.as_str());
         if let Some(r) = recipient {
-            r.max_amount += total;
+            r.max_amount += chan.max_amount;
         } else {
             payment_chan.recipients.insert(
-                recipient_pubkey_hash.clone(),
-                Recipient::new(total, face_value),
+                chan.key.clone(),
+                Recipient::new(
+                    chan.approve_signers,
+                    chan.max_amount,
+                    chan.face_value.unwrap(),
+                ),
             );
         }
     }
@@ -196,19 +198,19 @@ pub enum CommitmentType {
 }
 
 fn verify_commitment(
-    sender_pubkey_hash: &String,
-    commitment_type: CommitmentType,
-    commitment: Vec<u8>,
+    _sender_pubkey_hash: &str,
+    _commitment_type: CommitmentType,
+    _commitment: Vec<u8>,
 ) -> Result<(), ContractError> {
     // TODO:
     Ok(())
 }
 fn payment_check_interval_verify(
-    deps: Deps,
+    _deps: Deps,
     checks: &Vec<(PaymentCheque, PaymentCheque)>,
 ) -> Result<(), ContractError> {
     // TODO:
-    for (start, end) in checks {
+    for (_start, _end) in checks {
         // verify commitment and noce
     }
     Ok(())

@@ -36,16 +36,18 @@ pub struct Recipient {
     pub nonce_withdrawl: Option<u64>,
     pub face_value: Option<u128>,
     pub auto_release: Option<u64>,
+    pub approve_signers: Vec<String>,
 }
 
 impl Recipient {
     #[inline]
-    pub fn new(max_amount: u128, face_value: u128) -> Self {
+    pub fn new(signers: Vec<String>, max_amount: u128, face_value: u128) -> Self {
         Self {
             max_amount,
             nonce_withdrawl: None,
             face_value: Some(face_value),
             auto_release: None,
+            approve_signers: signers,
         }
     }
 

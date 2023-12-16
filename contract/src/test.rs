@@ -44,7 +44,12 @@ mod tests {
 
         let add_payment = ExecuteMsg::AddPaymentChan {
             sender_pubkey_hash: "sender_pubkey_hash".to_string(),
-            recipients: vec![("recipient_pubkey_hash".to_string(), 100, 10000)],
+            channels: vec![Channel {
+                key: "recipient_pubkey_hash1".to_string(),
+                face_value: Some(100),
+                max_amount: 10000,
+                approve_signers: vec![],
+            }],
         };
 
         let msg = ExecuteMsg::Receive(cw20::Cw20ReceiveMsg {
@@ -73,7 +78,12 @@ mod tests {
         // face_value = 100; total_amount = 10000;
         let add_payment = ExecuteMsg::AddPaymentChan {
             sender_pubkey_hash: "sender_pubkey_hash".to_string(),
-            recipients: vec![("recipient_pubkey_hash1".to_string(), 100, 10000)],
+            channels: vec![Channel {
+                key: "recipient_pubkey_hash1".to_string(),
+                face_value: Some(100),
+                max_amount: 10000,
+                approve_signers: vec![],
+            }],
         };
 
         let msg = ExecuteMsg::Receive(cw20::Cw20ReceiveMsg {
@@ -87,7 +97,12 @@ mod tests {
 
         let add_payment = ExecuteMsg::AddPaymentChan {
             sender_pubkey_hash: "sender_pubkey_hash".to_string(),
-            recipients: vec![("recipient_pubkey_hash2".to_string(), 200, 20000)],
+            channels: vec![Channel {
+                key: "recipient_pubkey_hash2".to_string(),
+                face_value: Some(200),
+                max_amount: 20000,
+                approve_signers: vec![],
+            }],
         };
 
         let msg = ExecuteMsg::Receive(cw20::Cw20ReceiveMsg {
@@ -226,7 +241,12 @@ mod tests {
         // face_value = 100; total_amount = 10000;
         let add_payment = ExecuteMsg::AddPaymentChan {
             sender_pubkey_hash: "sender_pubkey_hash".to_string(),
-            recipients: vec![("recipient_pubkey_hash1".to_string(), 100, 10000)],
+            channels: vec![Channel {
+                key: "recipient_pubkey_hash1".to_string(),
+                face_value: Some(100),
+                max_amount: 10000,
+                approve_signers: vec![],
+            }],
         };
 
         let msg = ExecuteMsg::Receive(cw20::Cw20ReceiveMsg {
@@ -241,7 +261,7 @@ mod tests {
         let close_msg = ExecuteMsg::ClosePaymentChan {
             sender_pubkey_hash: "sender_pubkey_hash".to_string(),
             sender_commitment: vec![],
-            recipients: vec![("recipient_pubkey_hash1".to_string(), vec![])],
+            channels: vec![("recipient_pubkey_hash1".to_string(), vec![])],
         };
 
         let res = execute(deps.as_mut(), mock_env(), info.clone(), close_msg).unwrap();
