@@ -46,14 +46,14 @@ pub fn execute(
         ExecuteMsg::ClosePaymentChan {
             sender_pubkey_hash,
             sender_commitment,
-            recipients,
+            channels,
         } => close_payment(
             deps,
             env,
             info,
             sender_pubkey_hash,
             sender_commitment,
-            recipients,
+            channels,
         ),
         ExecuteMsg::Cashing {
             recipient_pubkey_hash,
@@ -85,7 +85,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             size,
         )?),
         QueryMsg::Config {} => to_json_binary(&config(deps)?),
-        _ => Ok(Binary(vec![])),
     }
 }
 

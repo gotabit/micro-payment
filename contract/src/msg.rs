@@ -18,12 +18,12 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     AddPaymentChan {
         sender_pubkey_hash: String,
-        recipients: Vec<(String, u128, u128)>,
+        channels: Vec<Channel>,
     },
     ClosePaymentChan {
         sender_pubkey_hash: String,
         sender_commitment: Vec<u8>,
-        recipients: Vec<(String, Vec<u8>)>,
+        channels: Vec<(String, Vec<u8>)>,
     },
     Cashing {
         recipient_pubkey_hash: String,
@@ -37,6 +37,15 @@ pub enum ExecuteMsg {
     },
     /// This accepts a properly-encoded ReceiveMsg from a cw20 contract
     Receive(Cw20ReceiveMsg),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct Channel {
+    pub key: String,
+    pub max_amount: u128,
+    pub face_value: Option<u128>,
+    pub approve_signers: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
