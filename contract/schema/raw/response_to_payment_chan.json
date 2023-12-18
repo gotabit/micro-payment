@@ -12,9 +12,16 @@
     "Recipient": {
       "type": "object",
       "required": [
+        "approve_signers",
         "max_amount"
       ],
       "properties": {
+        "approve_signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "auto_release": {
           "type": [
             "integer",

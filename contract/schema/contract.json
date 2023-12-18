@@ -80,35 +80,24 @@
           "add_payment_chan": {
             "type": "object",
             "required": [
-              "recipients",
-              "sender_pubkey_hash"
+              "chan_key",
+              "channels"
             ],
             "properties": {
-              "recipients": {
+              "chan_key": {
+                "type": "string"
+              },
+              "channels": {
                 "type": "array",
                 "items": {
-                  "type": "array",
-                  "items": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "integer",
-                      "format": "uint128",
-                      "minimum": 0.0
-                    },
-                    {
-                      "type": "integer",
-                      "format": "uint128",
-                      "minimum": 0.0
-                    }
-                  ],
-                  "maxItems": 3,
-                  "minItems": 3
+                  "$ref": "#/definitions/Channel"
                 }
               },
-              "sender_pubkey_hash": {
-                "type": "string"
+              "operator": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           }
@@ -124,12 +113,15 @@
           "close_payment_chan": {
             "type": "object",
             "required": [
-              "recipients",
-              "sender_commitment",
-              "sender_pubkey_hash"
+              "chan_key",
+              "channels",
+              "commitment"
             ],
             "properties": {
-              "recipients": {
+              "chan_key": {
+                "type": "string"
+              },
+              "channels": {
                 "type": "array",
                 "items": {
                   "type": "array",
@@ -150,16 +142,44 @@
                   "minItems": 2
                 }
               },
-              "sender_commitment": {
+              "commitment": {
                 "type": "array",
                 "items": {
                   "type": "integer",
                   "format": "uint8",
                   "minimum": 0.0
                 }
-              },
-              "sender_pubkey_hash": {
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "add_signer"
+        ],
+        "properties": {
+          "add_signer": {
+            "type": "object",
+            "required": [
+              "chan_key",
+              "recipient_pubkey_hash",
+              "signers"
+            ],
+            "properties": {
+              "chan_key": {
                 "type": "string"
+              },
+              "recipient_pubkey_hash": {
+                "type": "string"
+              },
+              "signers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -258,6 +278,38 @@
       "Binary": {
         "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
         "type": "string"
+      },
+      "Channel": {
+        "type": "object",
+        "required": [
+          "approve_signers",
+          "key",
+          "max_amount"
+        ],
+        "properties": {
+          "approve_signers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "face_value": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint128",
+            "minimum": 0.0
+          },
+          "key": {
+            "type": "string"
+          },
+          "max_amount": {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          }
+        }
       },
       "Cw20ReceiveMsg": {
         "description": "Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
@@ -490,9 +542,16 @@
         "Recipient": {
           "type": "object",
           "required": [
+            "approve_signers",
             "max_amount"
           ],
           "properties": {
+            "approve_signers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
             "auto_release": {
               "type": [
                 "integer",
