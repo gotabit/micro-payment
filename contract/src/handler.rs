@@ -28,7 +28,7 @@ pub fn handle_cw20_msg(
     let raw: ExecuteMsg = from_json(&msg.msg)?;
     match raw {
         ExecuteMsg::AddPaymentChan {
-            sender_pubkey_hash,
+            chan_key: sender_pubkey_hash,
             channels,
             operator,
         } => build_payment_chan(
@@ -89,6 +89,29 @@ pub fn build_payment_chan(
     Ok(Response::new().add_attribute("method", "add_payment"))
 }
 
+pub fn add_signer(
+    deps: DepsMut,
+    info: MessageInfo,
+    sender_pubkey_hash: String,
+    recipient_pubkey_hash: String,
+    mut signers: Vec<String>,
+) -> Result<Response, ContractError> {
+    let mut payment_chan = PAYMENT_CHANNELS.load(deps.storage, sender_pubkey_hash.clone())?;
+
+    assert_eq!(payment_chan.operator, info.sender.to_string());
+
+    let recipient = payment_chan
+        .recipients
+        .get_mut(&recipient_pubkey_hash)
+        .unwrap();
+
+    recipient.approve_signers.append(&mut signers);
+
+    PAYMENT_CHANNELS.save(deps.storage, sender_pubkey_hash, &payment_chan)?;
+
+    Ok(Response::new().add_attribute("method", "add_signer"))
+}
+
 pub fn close_payment(
     deps: DepsMut,
     env: Env,
@@ -106,6 +129,9 @@ pub fn close_payment(
     let cfg = CONFIG.load(deps.storage)?;
 
     let mut payment_chan = PAYMENT_CHANNELS.load(deps.storage, sender_pubkey_hash.clone())?;
+
+    assert_eq!(payment_chan.operator, info.sender.to_string());
+
     let mut refund_amt = 0;
     for (addr, commitment) in recipients {
         let recipient = payment_chan.recipients.get_mut(addr.as_str());
