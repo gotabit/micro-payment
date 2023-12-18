@@ -44,21 +44,19 @@ pub fn execute(
     match msg {
         ExecuteMsg::Receive(msg) => handle_cw20_msg(deps, env, info, msg),
         ExecuteMsg::ClosePaymentChan {
-            sender_pubkey_hash,
-            sender_commitment,
+            chan_key,
+            commitment,
             channels,
-        } => close_payment(
-            deps,
-            env,
-            info,
-            sender_pubkey_hash,
-            sender_commitment,
-            channels,
-        ),
+        } => close_payment(deps, env, info, chan_key, commitment, channels),
         ExecuteMsg::Cashing {
             recipient_pubkey_hash,
             cheques,
         } => cashing(deps, env, info, recipient_pubkey_hash, cheques),
+        ExecuteMsg::AddSigner {
+            chan_key,
+            recipient_pubkey_hash,
+            signers,
+        } => add_signer(deps, info, chan_key, recipient_pubkey_hash, signers),
         ExecuteMsg::UpdateConfig {
             owner,
             auto_release_time,

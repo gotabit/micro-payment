@@ -17,14 +17,19 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     AddPaymentChan {
-        sender_pubkey_hash: String,
+        chan_key: String,
         channels: Vec<Channel>,
         operator: Option<String>,
     },
     ClosePaymentChan {
-        sender_pubkey_hash: String,
-        sender_commitment: Vec<u8>,
+        chan_key: String,
+        commitment: Vec<u8>,
         channels: Vec<(String, Vec<u8>)>,
+    },
+    AddSigner {
+        chan_key: String,
+        recipient_pubkey_hash: String,
+        signers: Vec<String>,
     },
     Cashing {
         recipient_pubkey_hash: String,

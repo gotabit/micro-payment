@@ -44,7 +44,7 @@ mod tests {
 
         let add_payment = ExecuteMsg::AddPaymentChan {
             operator: Some("operator".to_string()),
-            sender_pubkey_hash: "sender_pubkey_hash".to_string(),
+            chan_key: "sender_pubkey_hash".to_string(),
             channels: vec![Channel {
                 key: "recipient_pubkey_hash1".to_string(),
                 face_value: Some(100),
@@ -81,7 +81,7 @@ mod tests {
         // face_value = 100; total_amount = 10000;
         let add_payment = ExecuteMsg::AddPaymentChan {
             operator: Some("operator".to_string()),
-            sender_pubkey_hash: "sender_pubkey_hash".to_string(),
+            chan_key: "sender_pubkey_hash".to_string(),
             channels: vec![Channel {
                 key: "recipient_pubkey_hash1".to_string(),
                 face_value: Some(100),
@@ -102,7 +102,7 @@ mod tests {
 
         let add_payment = ExecuteMsg::AddPaymentChan {
             operator: Some("operator".to_string()),
-            sender_pubkey_hash: "sender_pubkey_hash".to_string(),
+            chan_key: "sender_pubkey_hash".to_string(),
             channels: vec![Channel {
                 key: "recipient_pubkey_hash2".to_string(),
                 face_value: Some(200),
@@ -251,7 +251,7 @@ mod tests {
         // face_value = 100; total_amount = 10000;
         let add_payment = ExecuteMsg::AddPaymentChan {
             operator: Some("operator".to_string()),
-            sender_pubkey_hash: "sender_pubkey_hash".to_string(),
+            chan_key: "sender_pubkey_hash".to_string(),
             channels: vec![Channel {
                 key: "recipient_pubkey_hash1".to_string(),
                 face_value: Some(100),
@@ -271,12 +271,59 @@ mod tests {
         assert_eq!(res.attributes.len(), 1);
 
         let close_msg = ExecuteMsg::ClosePaymentChan {
-            sender_pubkey_hash: "sender_pubkey_hash".to_string(),
-            sender_commitment: vec![],
+            chan_key: "sender_pubkey_hash".to_string(),
+            commitment: vec![],
             channels: vec![("recipient_pubkey_hash1".to_string(), vec![])],
         };
 
+        info.sender = Addr::unchecked("operator");
         let res = execute(deps.as_mut(), mock_env(), info.clone(), close_msg).unwrap();
         assert_eq!(res.messages.len(), 1);
+    }
+
+    #[test]
+    fn test_add_signer() {
+        let mut deps = mock_dependencies();
+
+        let msg = InstantiateMsg {
+            denom: crate::state::Denom::Cw20(Addr::unchecked("cw20_contract_addr")),
+            admin: Some("admin".to_string()),
+            auto_release_time: 100,
+            max_recipient: 1024,
+        };
+
+        let mut info = mock_info("admin", &coins(0, TEST_DENOM.to_string()));
+        instantiate(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+        // face_value = 100; total_amount = 10000;
+        let add_payment = ExecuteMsg::AddPaymentChan {
+            operator: Some("operator".to_string()),
+            chan_key: "sender_pubkey_hash".to_string(),
+            channels: vec![Channel {
+                key: "recipient_pubkey_hash1".to_string(),
+                face_value: Some(100),
+                max_amount: 10000,
+                approve_signers: vec![],
+            }],
+        };
+
+        let msg = ExecuteMsg::Receive(cw20::Cw20ReceiveMsg {
+            sender: "sender".to_string(),
+            amount: Uint128::new(10000),
+            msg: to_json_binary(&add_payment).unwrap(),
+        });
+
+        info.sender = Addr::unchecked("cw20_contract_addr");
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg).unwrap();
+        assert_eq!(res.attributes.len(), 1);
+
+        let add_signer = ExecuteMsg::AddSigner {
+            chan_key: "sender_pubkey_hash".to_string(),
+            recipient_pubkey_hash: "recipient_pubkey_hash1".to_string(),
+            signers: vec!["new_signer".to_string()],
+        };
+
+        info.sender = Addr::unchecked("operator");
+        let res = execute(deps.as_mut(), mock_env(), info, add_signer).unwrap();
+        assert_eq!(res.attributes.len(), 1);
     }
 }
