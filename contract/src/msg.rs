@@ -19,6 +19,7 @@ pub enum ExecuteMsg {
     AddPaymentChan {
         sender_pubkey_hash: String,
         channels: Vec<Channel>,
+        operator: Option<String>,
     },
     ClosePaymentChan {
         sender_pubkey_hash: String,
