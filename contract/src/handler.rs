@@ -19,12 +19,26 @@ pub fn handle_cw20_msg(
     info: MessageInfo,
     msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    match config.denom {
+        Denom::Native(_) => return Err(ContractError::UnsupportDenom()),
+        Denom::Cw20(addr) => assert_eq!(addr, info.sender),
+    };
+
     let raw: ExecuteMsg = from_json(&msg.msg)?;
     match raw {
         ExecuteMsg::AddPaymentChan {
             sender_pubkey_hash,
             channels,
-        } => build_payment_chan(deps, env, info, msg, sender_pubkey_hash, channels),
+            operator,
+        } => build_payment_chan(
+            deps,
+            env,
+            msg,
+            sender_pubkey_hash,
+            channels,
+            operator.unwrap_or(info.sender.to_string()),
+        ),
         _ => unreachable!(),
     }
 }
@@ -32,10 +46,10 @@ pub fn handle_cw20_msg(
 pub fn build_payment_chan(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
     msg: Cw20ReceiveMsg,
     sender_pubkey_hash: String,
     channels: Vec<Channel>, // recipient_pubkey_hash, face_value, total
+    operator: String,
 ) -> Result<Response, ContractError> {
     let mut total_amt = 0;
     for chan in channels.iter() {
@@ -44,12 +58,15 @@ pub fn build_payment_chan(
     if msg.amount.lt(&Uint128::from(total_amt)) {
         return Err(ContractError::InsufficientFund);
     }
-
+    // create a new one if not exist for the given key
     let mut payment_chan = PAYMENT_CHANNELS
         .may_load(deps.storage, sender_pubkey_hash.clone())?
         .unwrap_or(PaymentChannel {
+            operator: operator.clone(),
             recipients: HashMap::new(),
         });
+
+    assert_eq!(payment_chan.operator, operator);
 
     for chan in channels {
         let recipient = payment_chan.recipients.get_mut(chan.key.as_str());

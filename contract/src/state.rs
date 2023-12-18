@@ -26,6 +26,7 @@ pub struct Config {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PaymentChannel {
+    pub operator: String,
     pub recipients: HashMap<String, Recipient>,
 }
 
