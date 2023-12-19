@@ -28,12 +28,12 @@ pub enum ExecuteMsg {
     },
     AddSigner {
         chan_key: String,
-        recipient_pubkey_hash: String,
+        recipient_key: String,
         signers: Vec<String>,
     },
     Cashing {
-        recipient_pubkey_hash: String,
-        cheques: Vec<(PaymentCheque, PaymentCheque)>,
+        recipient_key: String,
+        cheques: Vec<PaymentCheque>,
     },
     /// Change the admin
     UpdateConfig {
@@ -57,9 +57,9 @@ pub struct Channel {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PaymentCheque {
-    pub sender_pubkey_hash: String,
+    pub sender_key: String,
     pub sender_commitment: Vec<u8>,
-    pub recipient_pubkey_hash: String,
+    pub recipient_key: String,
     pub recipient_commitment: Vec<u8>,
     pub value: Option<u128>,
     pub nonce: u64,

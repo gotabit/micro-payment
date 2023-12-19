@@ -204,28 +204,26 @@ pub fn cashing(
     _env: Env,
     info: MessageInfo,
     recipient_pubkey_hash: String,
-    cheques: Vec<(PaymentCheque, PaymentCheque)>,
+    cheques: Vec<PaymentCheque>,
 ) -> Result<Response, ContractError> {
     payment_check_interval_verify(deps.as_ref(), &cheques)?;
 
     let cfg = CONFIG.load(deps.storage)?;
     let mut total_cash = 0;
-    for (start, end) in cheques {
-        assert!(end.nonce >= start.nonce);
-        assert_eq!(end.sender_pubkey_hash, start.sender_pubkey_hash);
+    for cheque in cheques {
+        let mut payment_chan = PAYMENT_CHANNELS.load(deps.storage, cheque.sender_key.clone())?;
 
-        let mut payment_chan =
-            PAYMENT_CHANNELS.load(deps.storage, start.sender_pubkey_hash.clone())?;
         let recipient = payment_chan
             .recipients
             .get_mut(recipient_pubkey_hash.as_str())
             .unwrap();
 
-        assert_eq!(recipient.nonce_withdrawl.unwrap_or(0) + 1, start.nonce);
+        assert!(recipient.nonce_withdrawl.unwrap_or(0) < cheque.nonce);
 
-        total_cash += (end.nonce - start.nonce + 1) as u128 * recipient.face_value.unwrap();
-        recipient.nonce_withdrawl = Some(end.nonce);
-        PAYMENT_CHANNELS.save(deps.storage, start.sender_pubkey_hash, &payment_chan)?;
+        total_cash += (cheque.nonce - recipient.nonce_withdrawl.unwrap_or(0)) as u128
+            * recipient.face_value.unwrap();
+        recipient.nonce_withdrawl = Some(cheque.nonce);
+        PAYMENT_CHANNELS.save(deps.storage, cheque.sender_key, &payment_chan)?;
     }
 
     let sub_msgs = build_transfer_msg(&cfg, info.sender.to_string(), total_cash)?;
@@ -250,10 +248,10 @@ fn verify_commitment(
 }
 fn payment_check_interval_verify(
     _deps: Deps,
-    checks: &Vec<(PaymentCheque, PaymentCheque)>,
+    checks: &Vec<PaymentCheque>,
 ) -> Result<(), ContractError> {
     // TODO:
-    for (_start, _end) in checks {
+    for _start in checks {
         // verify commitment and noce
     }
     Ok(())

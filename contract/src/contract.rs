@@ -49,14 +49,14 @@ pub fn execute(
             channels,
         } => close_payment(deps, env, info, chan_key, commitment, channels),
         ExecuteMsg::Cashing {
-            recipient_pubkey_hash,
+            recipient_key,
             cheques,
-        } => cashing(deps, env, info, recipient_pubkey_hash, cheques),
+        } => cashing(deps, env, info, recipient_key, cheques),
         ExecuteMsg::AddSigner {
             chan_key,
-            recipient_pubkey_hash,
+            recipient_key,
             signers,
-        } => add_signer(deps, info, chan_key, recipient_pubkey_hash, signers),
+        } => add_signer(deps, info, chan_key, recipient_key, signers),
         ExecuteMsg::UpdateConfig {
             owner,
             auto_release_time,

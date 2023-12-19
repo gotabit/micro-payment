@@ -137,25 +137,15 @@ mod tests {
         assert_eq!(payment_chan_resp.unwrap().len(), 2);
 
         let msg = ExecuteMsg::Cashing {
-            recipient_pubkey_hash: "recipient_pubkey_hash1".to_string(),
-            cheques: vec![(
-                PaymentCheque {
-                    sender_pubkey_hash: "sender_pubkey_hash".to_string(),
-                    sender_commitment: vec![],
-                    recipient_pubkey_hash: "recipient_pubkey_hash1".to_string(),
-                    recipient_commitment: vec![],
-                    value: None,
-                    nonce: 1,
-                },
-                PaymentCheque {
-                    sender_pubkey_hash: "sender_pubkey_hash".to_string(),
-                    sender_commitment: vec![],
-                    recipient_pubkey_hash: "recipient_pubkey_hash1".to_string(),
-                    recipient_commitment: vec![],
-                    value: None,
-                    nonce: 3,
-                },
-            )],
+            recipient_key: "recipient_pubkey_hash1".to_string(),
+            cheques: vec![PaymentCheque {
+                sender_key: "sender_pubkey_hash".to_string(),
+                sender_commitment: vec![],
+                recipient_key: "recipient_pubkey_hash1".to_string(),
+                recipient_commitment: vec![],
+                value: None,
+                nonce: 3,
+            }],
         };
 
         info.sender = Addr::unchecked("cashing_account");
@@ -318,7 +308,7 @@ mod tests {
 
         let add_signer = ExecuteMsg::AddSigner {
             chan_key: "sender_pubkey_hash".to_string(),
-            recipient_pubkey_hash: "recipient_pubkey_hash1".to_string(),
+            recipient_key: "recipient_pubkey_hash1".to_string(),
             signers: vec!["new_signer".to_string()],
         };
 
