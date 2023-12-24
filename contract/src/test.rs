@@ -144,7 +144,7 @@ mod tests {
                 recipient_key: "recipient_pubkey_hash1".to_string(),
                 recipient_commitment: vec![],
                 value: None,
-                nonce: 3,
+                seq: 3,
             }],
         };
 
@@ -262,7 +262,6 @@ mod tests {
 
         let close_msg = ExecuteMsg::ClosePaymentChan {
             chan_key: "sender_pubkey_hash".to_string(),
-            commitment: vec![],
             channels: vec![("recipient_pubkey_hash1".to_string(), vec![])],
         };
 

@@ -117,15 +117,8 @@ pub fn close_payment(
     env: Env,
     info: MessageInfo,
     sender_pubkey_hash: String,
-    sender_commitment: Vec<u8>,
     recipients: Vec<(String, Vec<u8>)>, // recipient_pubkey_hash, recipient_commitment
 ) -> Result<Response, ContractError> {
-    verify_commitment(
-        &sender_pubkey_hash,
-        CommitmentType::CloseChannel,
-        sender_commitment,
-    )?;
-
     let cfg = CONFIG.load(deps.storage)?;
 
     let mut payment_chan = PAYMENT_CHANNELS.load(deps.storage, sender_pubkey_hash.clone())?;
@@ -218,11 +211,11 @@ pub fn cashing(
             .get_mut(recipient_pubkey_hash.as_str())
             .unwrap();
 
-        assert!(recipient.nonce_withdrawl.unwrap_or(0) < cheque.nonce);
+        assert!(recipient.withdrawl_seq.unwrap_or(0) < cheque.seq);
 
-        total_cash += (cheque.nonce - recipient.nonce_withdrawl.unwrap_or(0)) as u128
+        total_cash += (cheque.seq - recipient.withdrawl_seq.unwrap_or(0)) as u128
             * recipient.face_value.unwrap();
-        recipient.nonce_withdrawl = Some(cheque.nonce);
+        recipient.withdrawl_seq = Some(cheque.seq);
         PAYMENT_CHANNELS.save(deps.storage, cheque.sender_key, &payment_chan)?;
     }
 

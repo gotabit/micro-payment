@@ -6,4 +6,4 @@ pub mod msg;
 mod state;
 #[cfg(test)]
 pub mod test;
-mod zkp;
+// mod zkp;

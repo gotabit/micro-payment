@@ -43,11 +43,9 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Receive(msg) => handle_cw20_msg(deps, env, info, msg),
-        ExecuteMsg::ClosePaymentChan {
-            chan_key,
-            commitment,
-            channels,
-        } => close_payment(deps, env, info, chan_key, commitment, channels),
+        ExecuteMsg::ClosePaymentChan { chan_key, channels } => {
+            close_payment(deps, env, info, chan_key, channels)
+        }
         ExecuteMsg::Cashing {
             recipient_key,
             cheques,

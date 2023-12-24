@@ -1,6 +1,6 @@
 [workspace]
 members = ["contract"]
-resolver = "2"
+resolver = "1"
 
 [profile.release]
 opt-level = 3

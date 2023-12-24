@@ -17,23 +17,26 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     AddPaymentChan {
-        chan_key: String,
-        channels: Vec<Channel>,
-        operator: Option<String>,
+        //添加支付通道
+        chan_key: String,         // 通道key， sender pubkey hash
+        channels: Vec<Channel>,   // 通道信息
+        operator: Option<String>, // 操作者地址
     },
     ClosePaymentChan {
-        chan_key: String,
-        commitment: Vec<u8>,
-        channels: Vec<(String, Vec<u8>)>,
+        // 关闭支付通道
+        chan_key: String,                 // 通道key， sender pubkey hash
+        channels: Vec<(String, Vec<u8>)>, // tuple(接受者key， 接受者授权证明)
     },
     AddSigner {
-        chan_key: String,
-        recipient_key: String,
-        signers: Vec<String>,
+        // 添加授权这杯
+        chan_key: String,      // 通道key， sender pubkey hash
+        recipient_key: String, // 接受者pubkey hash
+        signers: Vec<String>,  // 子设备pubkey
     },
     Cashing {
-        recipient_key: String,
-        cheques: Vec<PaymentCheque>,
+        // 提取支票
+        recipient_key: String,       // 接受者pubkey hash
+        cheques: Vec<PaymentCheque>, // 最后一张支票信息
     },
     /// Change the admin
     UpdateConfig {
@@ -48,21 +51,22 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Channel {
-    pub key: String,
-    pub max_amount: u128,
-    pub face_value: Option<u128>,
-    pub approve_signers: Vec<String>,
+    // 支付通道
+    pub key: String,                  // sender pubkey hash
+    pub max_amount: u128,             // 最大支付数量
+    pub face_value: Option<u128>,     // 面值
+    pub approve_signers: Vec<String>, // 授权的子设备
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PaymentCheque {
-    pub sender_key: String,
-    pub sender_commitment: Vec<u8>,
-    pub recipient_key: String,
-    pub recipient_commitment: Vec<u8>,
-    pub value: Option<u128>,
-    pub nonce: u64,
+    pub sender_key: String,            // sender pubkey
+    pub sender_commitment: Vec<u8>,    // sender授权证明
+    pub recipient_key: String,         // 接受者pubkey hash
+    pub recipient_commitment: Vec<u8>, // 接受者证明文件
+    pub value: Option<u128>,           // 支票数额, 可选字段，若为等额支票则为空即可
+    pub seq: u64,                      // 序号(又称nonce)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]

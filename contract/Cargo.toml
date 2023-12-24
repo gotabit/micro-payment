@@ -32,10 +32,10 @@ cosmwasm-schema = "1.2.7" # A dev-dependency for CosmWasm contracts to generate 
 cw20 = "1.1.1"
 cosmwasm-tools= {git = "https://github.com/jacksoom/cosmwasm-tools"}
 lazy_static = "1.4.0"
-ark-circom = { git = "https://github.com/gakonst/ark-circom.git" }
-ark-bn254 = { version = "=0.4.0" }
-ark-ec = { version = "=0.4.1", default-features = false, features = ["parallel"] }
-num-bigint = { version = "=0.4.3", default-features = false, features = ["rand"] }
-ark-std = { version = "=0.4.0", default-features = false, features = ["parallel"] }
-ark-groth16 = { version = "=0.4.0", default-features = false, features = ["parallel"] }
-color-eyre = "=0.6.2"
+# ark-circom = { git = "https://github.com/gotabit/circom-compat" }
+# ark-bn254 = { version = "=0.4.0" }
+# ark-ec = { version = "=0.4.1", default-features = false, features = ["parallel"] }
+# num-bigint = { version = "=0.4.3", default-features = false, features = ["rand"] }
+# ark-std = { version = "=0.4.0", default-features = false, features = ["parallel"] }
+# ark-groth16 = { version = "=0.4.0", default-features = false, features = ["parallel"] }
+# color-eyre = "=0.6.2"
