@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "payment_chan"
+      ],
+      "properties": {
+        "payment_chan": {
+          "type": "object",
+          "required": [
+            "sender_pubkey_hash"
+          ],
+          "properties": {
+            "page": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "recipient_pubkey_hash": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sender_pubkey_hash": {
+              "type": "string"
+            },
+            "size": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "config"
+      ],
+      "properties": {
+        "config": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
