@@ -51,6 +51,7 @@ pub fn build_payment_chan(
     channels: Vec<Channel>, // recipient_pubkey_hash, face_value, total
     operator: String,
 ) -> Result<Response, ContractError> {
+    let mut cfg = CONFIG.load(deps.storage)?;
     let mut total_amt = 0;
     for chan in channels.iter() {
         total_amt += chan.max_amount;
@@ -73,9 +74,12 @@ pub fn build_payment_chan(
         if let Some(r) = recipient {
             r.max_amount += chan.max_amount;
         } else {
+            cfg.id += 1;
+
             payment_chan.recipients.insert(
                 chan.key.clone(),
                 Recipient::new(
+                    cfg.id,
                     chan.approve_signers,
                     chan.max_amount,
                     chan.face_value.unwrap(),
@@ -83,6 +87,8 @@ pub fn build_payment_chan(
             );
         }
     }
+
+    CONFIG.save(deps.storage, &cfg)?;
 
     PAYMENT_CHANNELS.save(deps.storage, sender_pubkey_hash, &payment_chan)?;
 
@@ -204,19 +210,20 @@ pub fn cashing(
     let cfg = CONFIG.load(deps.storage)?;
     let mut total_cash = 0;
     for cheque in cheques {
-        let mut payment_chan = PAYMENT_CHANNELS.load(deps.storage, cheque.sender_key.clone())?;
+        let mut payment_chan =
+            PAYMENT_CHANNELS.load(deps.storage, cheque.cheque.sender_key.clone())?;
 
         let recipient = payment_chan
             .recipients
             .get_mut(recipient_pubkey_hash.as_str())
             .unwrap();
 
-        assert!(recipient.withdrawl_seq.unwrap_or(0) < cheque.seq);
+        assert!(recipient.withdrawl_seq.unwrap_or(0) < cheque.cheque.seq);
 
-        total_cash += (cheque.seq - recipient.withdrawl_seq.unwrap_or(0)) as u128
+        total_cash += (cheque.cheque.seq - recipient.withdrawl_seq.unwrap_or(0)) as u128
             * recipient.face_value.unwrap();
-        recipient.withdrawl_seq = Some(cheque.seq);
-        PAYMENT_CHANNELS.save(deps.storage, cheque.sender_key, &payment_chan)?;
+        recipient.withdrawl_seq = Some(cheque.cheque.seq);
+        PAYMENT_CHANNELS.save(deps.storage, cheque.cheque.sender_key, &payment_chan)?;
     }
 
     let sub_msgs = build_transfer_msg(&cfg, info.sender.to_string(), total_cash)?;

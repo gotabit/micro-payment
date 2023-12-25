@@ -21,6 +21,7 @@ pub struct Config {
     pub auto_release_time: u64,
     pub owner: CanonicalAddr,
     pub max_recipient: u32,
+    pub id: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
@@ -33,6 +34,7 @@ pub struct PaymentChannel {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Recipient {
+    pub id: u32,
     pub max_amount: u128,
     pub withdrawl_seq: Option<u64>,
     pub face_value: Option<u128>,
@@ -42,8 +44,9 @@ pub struct Recipient {
 
 impl Recipient {
     #[inline]
-    pub fn new(signers: Vec<String>, max_amount: u128, face_value: u128) -> Self {
+    pub fn new(id: u32, signers: Vec<String>, max_amount: u128, face_value: u128) -> Self {
         Self {
+            id,
             max_amount,
             withdrawl_seq: None,
             face_value: Some(face_value),

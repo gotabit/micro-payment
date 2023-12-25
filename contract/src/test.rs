@@ -134,17 +134,19 @@ mod tests {
 
         let payment_chan_resp: Option<Vec<Recipient>> = from_json(res.unwrap()).unwrap();
 
-        assert_eq!(payment_chan_resp.unwrap().len(), 2);
-
+        assert_eq!(payment_chan_resp.clone().unwrap().len(), 2);
         let msg = ExecuteMsg::Cashing {
             recipient_key: "recipient_pubkey_hash1".to_string(),
             cheques: vec![PaymentCheque {
-                sender_key: "sender_pubkey_hash".to_string(),
+                cheque: Cheque {
+                    chan_id: 1,
+                    sender_key: "sender_pubkey_hash".to_string(),
+                    recipient_key: "recipient_pubkey_hash1".to_string(),
+                    seq: 3,
+                },
                 sender_commitment: vec![],
-                recipient_key: "recipient_pubkey_hash1".to_string(),
                 recipient_commitment: vec![],
                 value: None,
-                seq: 3,
             }],
         };
 

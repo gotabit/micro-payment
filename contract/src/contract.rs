@@ -26,6 +26,7 @@ pub fn instantiate(
             auto_release_time: msg.auto_release_time,
             max_recipient: msg.max_recipient,
             owner,
+            id: 0,
         }
     })?;
 

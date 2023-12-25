@@ -13,6 +13,7 @@
       "type": "object",
       "required": [
         "approve_signers",
+        "id",
         "max_amount"
       ],
       "properties": {
@@ -36,6 +37,11 @@
             "null"
           ],
           "format": "uint128",
+          "minimum": 0.0
+        },
+        "id": {
+          "type": "integer",
+          "format": "uint32",
           "minimum": 0.0
         },
         "max_amount": {

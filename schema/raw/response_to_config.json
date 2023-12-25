@@ -5,6 +5,7 @@
   "required": [
     "auto_release_time",
     "denom",
+    "id",
     "max_recipient",
     "owner"
   ],
@@ -16,6 +17,11 @@
     },
     "denom": {
       "$ref": "#/definitions/Denom"
+    },
+    "id": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
     },
     "max_recipient": {
       "type": "integer",

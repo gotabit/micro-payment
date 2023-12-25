@@ -61,12 +61,19 @@ pub struct Channel {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PaymentCheque {
-    pub sender_key: String,            // sender pubkey
+    pub cheque: Cheque,                // 通道id
     pub sender_commitment: Vec<u8>,    // sender授权证明
-    pub recipient_key: String,         // 接受者pubkey hash
     pub recipient_commitment: Vec<u8>, // 接受者证明文件
     pub value: Option<u128>,           // 支票数额, 可选字段，若为等额支票则为空即可
-    pub seq: u64,                      // 序号(又称nonce)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct Cheque {
+    pub chan_id: u32,          // 通道id
+    pub sender_key: String,    // sender pubkey
+    pub recipient_key: String, // 接受者pubkey hash
+    pub seq: u64,              // 序号(又称nonce)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema, QueryResponses)]

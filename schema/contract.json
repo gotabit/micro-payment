@@ -292,6 +292,33 @@
           }
         }
       },
+      "Cheque": {
+        "type": "object",
+        "required": [
+          "chan_id",
+          "recipient_key",
+          "sender_key",
+          "seq"
+        ],
+        "properties": {
+          "chan_id": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          "recipient_key": {
+            "type": "string"
+          },
+          "sender_key": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
       "Cw20ReceiveMsg": {
         "description": "Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
         "type": "object",
@@ -316,13 +343,14 @@
       "PaymentCheque": {
         "type": "object",
         "required": [
+          "cheque",
           "recipient_commitment",
-          "recipient_key",
-          "sender_commitment",
-          "sender_key",
-          "seq"
+          "sender_commitment"
         ],
         "properties": {
+          "cheque": {
+            "$ref": "#/definitions/Cheque"
+          },
           "recipient_commitment": {
             "type": "array",
             "items": {
@@ -331,9 +359,6 @@
               "minimum": 0.0
             }
           },
-          "recipient_key": {
-            "type": "string"
-          },
           "sender_commitment": {
             "type": "array",
             "items": {
@@ -341,14 +366,6 @@
               "format": "uint8",
               "minimum": 0.0
             }
-          },
-          "sender_key": {
-            "type": "string"
-          },
-          "seq": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
           },
           "value": {
             "type": [
@@ -441,6 +458,7 @@
       "required": [
         "auto_release_time",
         "denom",
+        "id",
         "max_recipient",
         "owner"
       ],
@@ -452,6 +470,11 @@
         },
         "denom": {
           "$ref": "#/definitions/Denom"
+        },
+        "id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
         },
         "max_recipient": {
           "type": "integer",
@@ -524,6 +547,7 @@
           "type": "object",
           "required": [
             "approve_signers",
+            "id",
             "max_amount"
           ],
           "properties": {
@@ -547,6 +571,11 @@
                 "null"
               ],
               "format": "uint128",
+              "minimum": 0.0
+            },
+            "id": {
+              "type": "integer",
+              "format": "uint32",
               "minimum": 0.0
             },
             "max_amount": {
